@@ -9,6 +9,14 @@ export async function routeChat(messages: ChatMessage[], requested: ProviderId) 
   const candidates = requested === "auto" ? available : available.filter((provider) => provider.id === requested);
   if (!candidates.length) throw new Error("No AI provider is configured yet. Visit Settings to connect one.");
 
+  if (requested === "auto" && candidates.length > 1) {
+    try {
+      return await Promise.any(candidates.map(async (provider) => ({ content: await provider.chat(messages), provider: provider.id })));
+    } catch {
+      throw new Error("That provider is taking a breather. Try again.");
+    }
+  }
+
   for (const provider of candidates) {
     try {
       return { content: await provider.chat(messages), provider: provider.id };
