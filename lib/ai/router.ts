@@ -6,7 +6,16 @@ import { geminiProvider } from "./gemini";
 const providers = [geminiProvider, openAIProvider];
 export async function routeChat(messages: ChatMessage[], requested: ProviderId) {
   const available = providers.filter((provider) => provider.isConfigured());
-  const provider = requested === "auto" ? available[0] : available.find((candidate) => candidate.id === requested);
-  if (!provider) throw new Error("No AI provider is configured yet. Visit Settings to connect one.");
-  return { content: await provider.chat(messages), provider: provider.id };
+  const candidates = requested === "auto" ? available : available.filter((provider) => provider.id === requested);
+  if (!candidates.length) throw new Error("No AI provider is configured yet. Visit Settings to connect one.");
+
+  for (const provider of candidates) {
+    try {
+      return { content: await provider.chat(messages), provider: provider.id };
+    } catch {
+      // Auto mode deliberately falls through to another configured provider.
+      // Provider-specific errors stay server-side and are never shown to users.
+    }
+  }
+  throw new Error("That provider is taking a breather. Try again.");
 }
