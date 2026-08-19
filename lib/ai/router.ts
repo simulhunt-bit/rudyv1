@@ -3,7 +3,7 @@ import type { ChatMessage, ProviderId } from "@/types/chat";
 import { openAIProvider } from "./openai";
 import { geminiProvider } from "./gemini";
 
-const providers = [geminiProvider, openAIProvider];
+const providers = [openAIProvider, geminiProvider];
 export async function routeChat(messages: ChatMessage[], requested: ProviderId) {
   const available = providers.filter((provider) => provider.isConfigured());
   const candidates = requested === "auto" ? available : available.filter((provider) => provider.id === requested);
