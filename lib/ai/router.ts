@@ -12,7 +12,12 @@ export async function routeChat(messages: ChatMessage[], requested: ProviderId) 
   if (requested === "auto" && candidates.length > 1) {
     try {
       return await Promise.any(candidates.map(async (provider) => ({ content: await provider.chat(messages), provider: provider.id })));
-    } catch {
+    } catch (err) {
+      if (err instanceof AggregateError) {
+        err.errors.forEach((e, i) => console.error(`[rudy][router] provider ${candidates[i]?.id} failed:`, e));
+      } else {
+        console.error("[rudy][router] auto mode failed:", err);
+      }
       throw new Error("That provider is taking a breather. Try again.");
     }
   }
@@ -20,9 +25,8 @@ export async function routeChat(messages: ChatMessage[], requested: ProviderId) 
   for (const provider of candidates) {
     try {
       return { content: await provider.chat(messages), provider: provider.id };
-    } catch {
-      // Auto mode deliberately falls through to another configured provider.
-      // Provider-specific errors stay server-side and are never shown to users.
+    } catch (err) {
+      console.error(`[rudy][router] provider ${provider.id} failed:`, err);
     }
   }
   throw new Error("That provider is taking a breather. Try again.");
